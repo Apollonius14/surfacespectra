@@ -44,8 +44,8 @@ export class ThreeJSSetup {
       0.1,
       1000
     );
-    this.camera.position.set(0, 12, 8);
-    this.camera.lookAt(0, 0, 0);
+    this.camera.position.set(0, 8, -12);
+    this.camera.lookAt(0, 0, 5);
     
     // Renderer setup
     this.renderer.setSize(container.clientWidth, container.clientHeight);
@@ -64,7 +64,7 @@ export class ThreeJSSetup {
   private createArcGeometry(): void {
     const segments = this.params.segments;
     
-    // Create plane geometry
+    // Create plane geometry for wedge shape
     this.geometry = new THREE.PlaneGeometry(
       this.params.maxRadius * 2,
       this.params.maxRadius * 2,
@@ -72,64 +72,66 @@ export class ThreeJSSetup {
       segments
     );
     
-    // Rotate to lie flat initially
-    this.geometry.rotateX(-Math.PI / 2);
-    
-    // Transform to arc shape and hide vertices outside arc
+    // Transform to create wedge shape with proper orientation
     const positions = this.geometry.attributes.position.array as Float32Array;
     const colors = new Float32Array(positions.length);
     
     for (let i = 0; i < positions.length; i += 3) {
       const x = positions[i];
-      const z = positions[i + 2];
+      const y = positions[i + 1];
       
-      const radius = Math.sqrt(x * x + z * z);
-      const angle = Math.atan2(z, x);
+      // Convert x,y to radius and angle for wedge shape
+      const radius = Math.sqrt(x * x + y * y);
+      const angle = Math.atan2(y, x);
       
       // Hide vertices outside arc span or beyond radius
       if (Math.abs(angle) > this.params.arcSpan / 2 || radius > this.params.maxRadius || radius < 0.5) {
-        positions[i + 1] = -100; // Hide by moving far down
+        positions[i] = 0;     // X
+        positions[i + 1] = 0; // Y (height)
+        positions[i + 2] = -100; // Z (hide by moving far back)
         colors[i] = 0.0;     // R
         colors[i + 1] = 0.0; // G
         colors[i + 2] = 0.0; // B
       } else {
-        positions[i + 1] = 0; // Reset Y position
+        // Map to wedge coordinates: angle becomes X, radius becomes Z
+        const normalizedAngle = angle / (this.params.arcSpan / 2); // -1 to 1
+        positions[i] = normalizedAngle * this.params.maxRadius; // X position based on angle
+        positions[i + 1] = 0; // Y height (flat initially)
+        positions[i + 2] = radius; // Z position based on radius
         
-        // Set color based on frequency (angle) - more vibrant
-        const normalizedAngle = (angle + this.params.arcSpan / 2) / this.params.arcSpan;
-        colors[i] = 1.0 - normalizedAngle * 0.8;     // R (high at low freq)
-        colors[i + 1] = Math.sin(normalizedAngle * Math.PI) * 0.8; // G (peak at mid freq)
-        colors[i + 2] = normalizedAngle * 0.8;     // B (high at high freq)
+        // Set color based on frequency (angle position)
+        const normalizedFreq = (angle + this.params.arcSpan / 2) / this.params.arcSpan;
+        colors[i] = 1.0 - normalizedFreq * 0.8;     // R (high at low freq)
+        colors[i + 1] = Math.sin(normalizedFreq * Math.PI) * 0.8; // G (peak at mid freq)
+        colors[i + 2] = normalizedFreq * 0.8;     // B (high at high freq)
       }
     }
     
     this.geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
     
-    // Material setup
+    // Material setup - very thin base surface
     this.material = new THREE.MeshPhongMaterial({
       vertexColors: true,
       side: THREE.DoubleSide,
-      transparent: false,
-      opacity: 1.0,
-      shininess: 50,
+      transparent: true,
+      opacity: 0.7,
+      shininess: 30,
       wireframe: false
     });
     
     this.mesh = new THREE.Mesh(this.geometry, this.material);
     this.scene.add(this.mesh);
     
-    // Add wireframe for better visibility
+    // Add subtle wireframe grid
     const wireframeGeometry = this.geometry.clone();
     const wireframeMaterial = new THREE.MeshBasicMaterial({ 
-      color: 0x444444, 
+      color: 0x333333, 
       wireframe: true,
       transparent: true,
-      opacity: 0.3
+      opacity: 0.2
     });
     const wireframeMesh = new THREE.Mesh(wireframeGeometry, wireframeMaterial);
     this.scene.add(wireframeMesh);
-    
-    // Remove test cube - no longer needed
   }
 
   private setupLighting(): void {
@@ -162,7 +164,7 @@ export class ThreeJSSetup {
       const z = positions[i + 2];
       
       // Skip hidden vertices
-      if (positions[i + 1] === -100) continue;
+      if (z === -100) continue;
       
       const height = this.waveEngine.calculateHeightAtPosition(x, z);
       positions[i + 1] = height;
@@ -177,8 +179,8 @@ export class ThreeJSSetup {
     this.updateGeometry();
     
     // Keep camera fixed - no rotation
-    this.camera.position.set(0, 12, 8);
-    this.camera.lookAt(0, 0, 0);
+    this.camera.position.set(0, 8, -12);
+    this.camera.lookAt(0, 0, 5);
     
     this.renderer.render(this.scene, this.camera);
     this.animationId = requestAnimationFrame(this.animate);
