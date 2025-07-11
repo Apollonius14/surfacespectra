@@ -13,47 +13,68 @@ export class CoordinateTransform {
   private readonly params = {
     arcSpan: Math.PI / 3, // 60 degrees total
     maxRadius: 10,
+    mouthWidth: 0.3, // Small but finite width at mouth to avoid singularity
   };
 
   /**
    * Transform logical coordinates (frequency, time) to display coordinates (x, y, z)
-   * Creates shell/wedge shape: narrow at bottom, fanning out at top
+   * Creates shell/wedge shape with bilateral symmetry and finite mouth width
    */
   public logicalToDisplay(logical: LogicalCoordinates): DisplayCoordinates {
-    // Map time to radius (distance from mouth)
+    // Map time to radius (distance from mouth) with minimum mouth width
     const radius = logical.time * this.params.maxRadius;
     
-    // Map frequency to angle (±30 degrees from centerline)
-    const angle = (logical.frequency - 0.5) * this.params.arcSpan;
+    // For bilateral symmetry: map frequency to FULL spectrum on each half
+    // Left half: frequency 0-1 maps to -30° to 0°
+    // Right half: frequency 0-1 maps to 0° to +30°
+    const isLeftHalf = logical.frequency < 0.5;
+    const normalizedFreq = isLeftHalf ? 
+      (0.5 - logical.frequency) * 2 : // 0.5->0 becomes 0->1, 0->0.5 becomes 1->0
+      (logical.frequency - 0.5) * 2;  // 0.5->1 becomes 0->1
     
-    // Convert polar to Cartesian coordinates
-    const x = radius * Math.sin(angle);
-    const z = radius * Math.cos(angle);
+    // Map to angle with each half covering full spectrum
+    const angle = isLeftHalf ? 
+      -normalizedFreq * (this.params.arcSpan / 2) : // Left: 0 to -30°
+      normalizedFreq * (this.params.arcSpan / 2);    // Right: 0 to +30°
+    
+    // Calculate width that avoids singularity at mouth
+    const currentWidth = this.params.mouthWidth + (radius * Math.tan(this.params.arcSpan / 2));
+    const x = currentWidth * (angle / (this.params.arcSpan / 2));
     
     return {
       x,
       y: 0, // Height will be added by wave calculations
-      z
+      z: radius
     };
   }
 
   /**
    * Transform display coordinates back to logical coordinates
-   * Used for sampling wave heights at display positions
+   * Handles bilateral symmetry mapping
    */
   public displayToLogical(display: DisplayCoordinates): LogicalCoordinates {
-    // Convert Cartesian back to polar
-    const radius = Math.sqrt(display.x * display.x + display.z * display.z);
-    const angle = Math.atan2(display.x, display.z);
-    
-    // Map radius back to time
+    const radius = display.z;
     const time = radius / this.params.maxRadius;
     
-    // Map angle back to frequency
-    const frequency = (angle / this.params.arcSpan) + 0.5;
+    // Determine which half and calculate normalized frequency within that half
+    const isLeftHalf = display.x < 0;
+    const currentWidth = this.params.mouthWidth + (radius * Math.tan(this.params.arcSpan / 2));
+    
+    if (currentWidth === 0) {
+      // At mouth, default to center
+      return { frequency: 0.5, time: Math.max(0, Math.min(1, time)) };
+    }
+    
+    const normalizedPosition = Math.abs(display.x) / currentWidth;
+    const normalizedFreq = Math.max(0, Math.min(1, normalizedPosition));
+    
+    // Map back to 0-1 range with bilateral symmetry
+    const frequency = isLeftHalf ? 
+      0.5 - (normalizedFreq * 0.5) : // Left half: 0.5 to 0
+      0.5 + (normalizedFreq * 0.5);  // Right half: 0.5 to 1
     
     return {
-      frequency: Math.max(0, Math.min(1, frequency)), // Clamp to [0,1]
+      frequency: Math.max(0, Math.min(1, frequency)),
       time: Math.max(0, Math.min(1, time))
     };
   }

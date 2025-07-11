@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import { PhoneticType } from "@/lib/waveEngine";
+import { cn } from '@/lib/utils';
 
 interface PhoneticKeyboardProps {
   onKeyPress: (phoneticType: PhoneticType) => void;
@@ -37,7 +39,18 @@ const phoneticKeys = [
 ];
 
 export default function PhoneticKeyboard({ onKeyPress, activeWaveCount }: PhoneticKeyboardProps) {
+  const [lastKeyPress, setLastKeyPress] = useState<{ type: PhoneticType; time: number } | null>(null);
+  const debounceTime = 300; // 300ms debounce
+  
   const handleKeyPress = (phoneticType: PhoneticType) => {
+    const now = Date.now();
+    
+    // Debounce: only allow one key press per debounce period
+    if (lastKeyPress && (now - lastKeyPress.time < debounceTime)) {
+      return;
+    }
+    
+    setLastKeyPress({ type: phoneticType, time: now });
     onKeyPress(phoneticType);
   };
 

@@ -67,10 +67,7 @@ export class WaveEngine {
 
   public calculateHeightAtPosition(frequency: number, time: number): number {
     // Use logical coordinates (frequency 0-1, time 0-1) for wave calculations
-    // This keeps the wave physics clean and separate from display transformation
-    
-    // Map frequency to angle for wave center calculation
-    const angle = (frequency - 0.5) * this.params.arcSpan;
+    // With bilateral symmetry, each half represents full spectrum
     
     // Check if position is within valid bounds
     if (frequency < 0 || frequency > 1 || time < 0 || time > 1) {
@@ -81,15 +78,24 @@ export class WaveEngine {
     
     this.waves.forEach(wave => {
       const waveRadius = this.getWaveRadius(wave);
-      const angleDiff = Math.abs(angle - wave.centerAngle);
+      const distanceFromWave = Math.abs(time * this.params.maxRadius - waveRadius);
       
-      // Check if this position is affected by this wave
-      if (angleDiff <= wave.spread) {
-        const distanceFromWave = Math.abs(time * this.params.maxRadius - waveRadius);
+      // Only process if wave is close enough
+      if (distanceFromWave < 2) {
+        // Calculate bilateral symmetry effect
+        // Both halves respond to the same wave, creating mirror effect
+        const leftHalfFreq = frequency < 0.5 ? (0.5 - frequency) * 2 : 0;
+        const rightHalfFreq = frequency >= 0.5 ? (frequency - 0.5) * 2 : 0;
+        const activeFreq = Math.max(leftHalfFreq, rightHalfFreq);
         
-        if (distanceFromWave < 2) {
+        // Map frequency to angle for wave center calculation
+        const angle = activeFreq * (this.params.arcSpan / 2);
+        const angleDiff = Math.abs(angle - Math.abs(wave.centerAngle));
+        
+        // Check if this position is affected by this wave
+        if (angleDiff <= wave.spread) {
           const age = this.time - wave.birthTime;
-          const amplitude = wave.amplitude * Math.exp(-age * wave.decay) * 2.0;
+          const amplitude = wave.amplitude * Math.exp(-age * wave.decay) * 1.5;
           const angularFactor = Math.cos(angleDiff / wave.spread * Math.PI / 2);
           const radialFactor = Math.exp(-distanceFromWave * 0.8);
           const frequencyFactor = Math.sin(wave.frequency / 100 * distanceFromWave * Math.PI);
