@@ -49,7 +49,7 @@ export class ThreeJSSetup {
     );
     // Position camera like low-flying aircraft - behind and above the mouth
     this.camera.position.set(0, this.params.maxRadius / 2, -this.params.maxRadius / 2);
-    this.camera.lookAt(0, 0, 0); // Look at the tip/mouth of the shell
+    this.camera.lookAt(0, 0, this.params.maxRadius / 2); // Look at the tip/mouth of the shell
     
     // Renderer setup
     this.renderer.setSize(container.clientWidth, container.clientHeight);
@@ -115,6 +115,7 @@ export class ThreeJSSetup {
     });
     
     this.mesh = new THREE.Mesh(this.geometry, this.material);
+    this.mesh.position.z = this.params.maxRadius / 2; // Move wedge down to canvas center
     this.scene.add(this.mesh);
     
     // Add wireframe grid to show shell structure
@@ -126,6 +127,7 @@ export class ThreeJSSetup {
       opacity: 0.4
     });
     const wireframeMesh = new THREE.Mesh(wireframeGeometry, wireframeMaterial);
+    wireframeMesh.position.z = this.params.maxRadius / 2; // Match main mesh position
     this.scene.add(wireframeMesh);
   }
 
@@ -158,10 +160,11 @@ export class ThreeJSSetup {
       const x = positions[i];
       const z = positions[i + 2];
       
-      // Skip hidden vertices
-      if (z === -100) continue;
+      // Transform display coordinates back to logical coordinates for wave sampling
+      const logical = this.coordinateTransform.displayToLogical({ x, y: 0, z });
       
-      const height = this.waveEngine.calculateHeightAtPosition(x, z);
+      // Calculate wave height using logical coordinates
+      const height = this.waveEngine.calculateHeightAtPosition(logical.frequency, logical.time);
       positions[i + 1] = height;
     }
     
@@ -175,7 +178,7 @@ export class ThreeJSSetup {
     
     // Keep camera fixed - no rotation
     this.camera.position.set(0, this.params.maxRadius / 2, -this.params.maxRadius / 2);
-    this.camera.lookAt(0, 0, 0);
+    this.camera.lookAt(0, 0, this.params.maxRadius / 2);
     
     this.renderer.render(this.scene, this.camera);
     this.animationId = requestAnimationFrame(this.animate);

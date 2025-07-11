@@ -65,16 +65,15 @@ export class WaveEngine {
     );
   }
 
-  public calculateHeightAtPosition(x: number, z: number): number {
-    // Shell coordinates: x is horizontal position, z is distance from mouth
-    const horizontalPos = x;
-    const distanceFromMouth = z;
+  public calculateHeightAtPosition(frequency: number, time: number): number {
+    // Use logical coordinates (frequency 0-1, time 0-1) for wave calculations
+    // This keeps the wave physics clean and separate from display transformation
     
-    // Calculate angle from centerline
-    const angle = Math.atan2(horizontalPos, distanceFromMouth);
+    // Map frequency to angle for wave center calculation
+    const angle = (frequency - 0.5) * this.params.arcSpan;
     
-    // Check if position is within the shell
-    if (Math.abs(angle) > this.params.arcSpan / 2 || distanceFromMouth < 0.1) {
+    // Check if position is within valid bounds
+    if (frequency < 0 || frequency > 1 || time < 0 || time > 1) {
       return 0;
     }
 
@@ -86,7 +85,7 @@ export class WaveEngine {
       
       // Check if this position is affected by this wave
       if (angleDiff <= wave.spread) {
-        const distanceFromWave = Math.abs(distanceFromMouth - waveRadius);
+        const distanceFromWave = Math.abs(time * this.params.maxRadius - waveRadius);
         
         if (distanceFromWave < 2) {
           const age = this.time - wave.birthTime;
