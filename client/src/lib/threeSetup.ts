@@ -44,7 +44,7 @@ export class ThreeJSSetup {
       0.1,
       1000
     );
-    this.camera.position.set(0, 12, 15);
+    this.camera.position.set(0, 12, 8);
     this.camera.lookAt(0, 0, 0);
     
     // Renderer setup
@@ -129,12 +129,7 @@ export class ThreeJSSetup {
     const wireframeMesh = new THREE.Mesh(wireframeGeometry, wireframeMaterial);
     this.scene.add(wireframeMesh);
     
-    // Add a simple test cube to verify rendering
-    const testGeometry = new THREE.BoxGeometry(1, 1, 1);
-    const testMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-    const testMesh = new THREE.Mesh(testGeometry, testMaterial);
-    testMesh.position.set(0, 5, 0);
-    this.scene.add(testMesh);
+    // Remove test cube - no longer needed
   }
 
   private setupLighting(): void {
@@ -181,10 +176,8 @@ export class ThreeJSSetup {
     this.waveEngine.updateTime(0.05);
     this.updateGeometry();
     
-    // Slight camera rotation for better view
-    const time = Date.now() * 0.0005;
-    this.camera.position.x = Math.sin(time) * 14;
-    this.camera.position.z = Math.cos(time) * 14;
+    // Keep camera fixed - no rotation
+    this.camera.position.set(0, 12, 8);
     this.camera.lookAt(0, 0, 0);
     
     this.renderer.render(this.scene, this.camera);

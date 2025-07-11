@@ -47,19 +47,16 @@ export default function PhoneticKeyboard({ onKeyPress, activeWaveCount }: Phonet
   };
 
   return (
-    <div className="h-48 bg-secondary border-t border-border">
+    <div className="h-20 bg-secondary border-t border-border">
       <div className="h-full flex flex-col">
         {/* Keyboard Header */}
-        <div className="px-6 py-3 bg-secondary border-b border-border">
+        <div className="px-3 py-1 bg-secondary border-b border-border">
           <div className="flex justify-between items-center">
             <div>
-              <h2 className="text-sm font-medium text-foreground">Phonetic Keys</h2>
-              <p className="text-xs text-muted-foreground mt-1">
-                Touch or click to generate wave pulses
-              </p>
+              <h2 className="text-xs font-medium text-foreground">Phonetic Keys</h2>
             </div>
             <div className="text-xs text-muted-foreground">
-              Active waves: <span className="text-accent font-medium">{activeWaveCount}</span>
+              Active: <span className="text-accent font-medium">{activeWaveCount}</span>
             </div>
           </div>
         </div>
@@ -73,9 +70,8 @@ export default function PhoneticKeyboard({ onKeyPress, activeWaveCount }: Phonet
                 onTouchStart={(e) => handleTouchStart(e, key.type)}
                 onClick={() => handleKeyPress(key.type)}
               >
-                <div className="text-2xl font-bold mb-1">{key.symbol}</div>
+                <div className="text-lg font-bold">{key.symbol}</div>
                 <div className="text-xs opacity-80">{key.label}</div>
-                <div className="text-xs opacity-60 mt-1">{key.frequency}</div>
               </button>
               <div className="wave-indicator" />
             </div>

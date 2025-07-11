@@ -86,7 +86,7 @@ export class WaveEngine {
         
         if (distanceFromWave < 2) {
           const age = this.time - wave.birthTime;
-          const amplitude = wave.amplitude * Math.exp(-age * wave.decay);
+          const amplitude = wave.amplitude * Math.exp(-age * wave.decay) * 0.3; // Reduced base amplitude
           const angularFactor = Math.cos(angleDiff / wave.spread * Math.PI / 2);
           const radialFactor = Math.exp(-distanceFromWave * 0.8);
           const frequencyFactor = Math.sin(wave.frequency / 100 * distanceFromWave * Math.PI);
