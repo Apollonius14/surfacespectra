@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { WaveEngine } from './waveEngine';
+import { CoordinateTransform } from './coordinateTransform';
 
 export class ThreeJSSetup {
   private scene: THREE.Scene;
@@ -9,6 +10,7 @@ export class ThreeJSSetup {
   private material: THREE.MeshPhongMaterial;
   private mesh: THREE.Mesh;
   private waveEngine: WaveEngine;
+  private coordinateTransform: CoordinateTransform;
   private animationId: number | null = null;
 
   private readonly params = {
@@ -19,6 +21,7 @@ export class ThreeJSSetup {
 
   constructor(canvas: HTMLCanvasElement, waveEngine: WaveEngine) {
     this.waveEngine = waveEngine;
+    this.coordinateTransform = new CoordinateTransform();
     
     // Initialize Three.js components
     this.scene = new THREE.Scene();
@@ -65,60 +68,43 @@ export class ThreeJSSetup {
   private createArcGeometry(): void {
     const segments = this.params.segments;
     
-    // Create plane geometry for shell-shaped wedge
+    // Create plane geometry that will be transformed
     this.geometry = new THREE.PlaneGeometry(
-      this.params.maxRadius * 2,
-      this.params.maxRadius * 2,
+      2, // Normalized size
+      2, // Normalized size
       segments,
       segments
     );
     
-    // Transform to create shell logo shape - narrow bottom fanning upward
+    // Transform plane coordinates to shell coordinates using coordinate transform
     const positions = this.geometry.attributes.position.array as Float32Array;
     const colors = new Float32Array(positions.length);
     
     for (let i = 0; i < positions.length; i += 3) {
-      const x = positions[i];
-      const y = positions[i + 1];
+      const x = positions[i];      // -1 to 1
+      const y = positions[i + 1];  // -1 to 1
       
-      // Convert plane coordinates to shell coordinates
-      // X stays as horizontal position (-maxRadius to +maxRadius)
-      // Y becomes distance from mouth (0 to maxRadius)
-      const horizontalPos = x;
-      const distanceFromMouth = y + this.params.maxRadius; // Shift Y from [-maxRadius, maxRadius] to [0, 2*maxRadius]
+      // Convert plane coordinates to logical coordinates
+      const frequency = (x + 1) / 2; // 0 to 1
+      const time = (y + 1) / 2;      // 0 to 1
       
-      // Calculate angle from centerline based on horizontal position and distance
-      const maxWidthAtDistance = distanceFromMouth * Math.tan(this.params.arcSpan / 2);
-      const angle = Math.atan2(horizontalPos, distanceFromMouth);
+      // Transform to display coordinates
+      const displayCoords = this.coordinateTransform.logicalToDisplay({ frequency, time });
       
-      // Hide vertices outside the shell shape
-      if (Math.abs(angle) > this.params.arcSpan / 2 || 
-          distanceFromMouth < 0.1 || 
-          distanceFromMouth > this.params.maxRadius ||
-          Math.abs(horizontalPos) > maxWidthAtDistance) {
-        positions[i] = 0;     // X
-        positions[i + 1] = 0; // Y (height)
-        positions[i + 2] = -100; // Z (hide by moving far back)
-        colors[i] = 0.0;
-        colors[i + 1] = 0.0;
-        colors[i + 2] = 0.0;
-      } else {
-        // Shell coordinates: X = horizontal position, Z = distance from mouth
-        positions[i] = horizontalPos; // X (horizontal spread)
-        positions[i + 1] = 0; // Y (height - flat initially)
-        positions[i + 2] = distanceFromMouth; // Z (distance from mouth)
-        
-        // Set color based on frequency (horizontal position)
-        const normalizedFreq = (angle + this.params.arcSpan / 2) / this.params.arcSpan;
-        colors[i] = 1.0 - normalizedFreq * 0.8;     // R (high at low freq)
-        colors[i + 1] = Math.sin(normalizedFreq * Math.PI) * 0.8; // G (peak at mid freq)
-        colors[i + 2] = normalizedFreq * 0.8;     // B (high at high freq)
-      }
+      // Apply transformation
+      positions[i] = displayCoords.x;     // X
+      positions[i + 1] = displayCoords.y; // Y (height)
+      positions[i + 2] = displayCoords.z; // Z
+      
+      // Set color based on frequency
+      colors[i] = 1.0 - frequency * 0.8;     // R (high at low freq)
+      colors[i + 1] = Math.sin(frequency * Math.PI) * 0.8; // G (peak at mid freq)
+      colors[i + 2] = frequency * 0.8;     // B (high at high freq)
     }
     
     this.geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
     
-    // Material setup - very thin base surface
+    // Material setup - thin base surface
     this.material = new THREE.MeshPhongMaterial({
       vertexColors: true,
       side: THREE.DoubleSide,
@@ -131,13 +117,13 @@ export class ThreeJSSetup {
     this.mesh = new THREE.Mesh(this.geometry, this.material);
     this.scene.add(this.mesh);
     
-    // Add subtle wireframe grid
+    // Add wireframe grid to show shell structure
     const wireframeGeometry = this.geometry.clone();
     const wireframeMaterial = new THREE.MeshBasicMaterial({ 
-      color: 0x333333, 
+      color: 0x444444, 
       wireframe: true,
       transparent: true,
-      opacity: 0.2
+      opacity: 0.4
     });
     const wireframeMesh = new THREE.Mesh(wireframeGeometry, wireframeMaterial);
     this.scene.add(wireframeMesh);
