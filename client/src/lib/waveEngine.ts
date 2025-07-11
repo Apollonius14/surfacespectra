@@ -66,13 +66,15 @@ export class WaveEngine {
   }
 
   public calculateHeightAtPosition(x: number, z: number): number {
-    // Convert from wedge coordinates: x is angle position, z is radius
-    const anglePosition = x / this.params.maxRadius; // -1 to 1
-    const radius = z;
-    const angle = anglePosition * (this.params.arcSpan / 2); // Convert to actual angle
+    // Shell coordinates: x is horizontal position, z is distance from mouth
+    const horizontalPos = x;
+    const distanceFromMouth = z;
     
-    // Check if position is within the arc
-    if (Math.abs(angle) > this.params.arcSpan / 2 || radius < 0.5) {
+    // Calculate angle from centerline
+    const angle = Math.atan2(horizontalPos, distanceFromMouth);
+    
+    // Check if position is within the shell
+    if (Math.abs(angle) > this.params.arcSpan / 2 || distanceFromMouth < 0.1) {
       return 0;
     }
 
@@ -84,11 +86,11 @@ export class WaveEngine {
       
       // Check if this position is affected by this wave
       if (angleDiff <= wave.spread) {
-        const distanceFromWave = Math.abs(radius - waveRadius);
+        const distanceFromWave = Math.abs(distanceFromMouth - waveRadius);
         
         if (distanceFromWave < 2) {
           const age = this.time - wave.birthTime;
-          const amplitude = wave.amplitude * Math.exp(-age * wave.decay) * 2.0; // Increased amplitude for visibility
+          const amplitude = wave.amplitude * Math.exp(-age * wave.decay) * 2.0;
           const angularFactor = Math.cos(angleDiff / wave.spread * Math.PI / 2);
           const radialFactor = Math.exp(-distanceFromWave * 0.8);
           const frequencyFactor = Math.sin(wave.frequency / 100 * distanceFromWave * Math.PI);

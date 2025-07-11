@@ -44,8 +44,9 @@ export class ThreeJSSetup {
       0.1,
       1000
     );
-    this.camera.position.set(0, 8, -12);
-    this.camera.lookAt(0, 0, 5);
+    // Position camera like low-flying aircraft - behind and above the mouth
+    this.camera.position.set(0, this.params.maxRadius / 2, -this.params.maxRadius / 2);
+    this.camera.lookAt(0, 0, 0); // Look at the tip/mouth of the shell
     
     // Renderer setup
     this.renderer.setSize(container.clientWidth, container.clientHeight);
@@ -64,7 +65,7 @@ export class ThreeJSSetup {
   private createArcGeometry(): void {
     const segments = this.params.segments;
     
-    // Create plane geometry for wedge shape
+    // Create plane geometry for shell-shaped wedge
     this.geometry = new THREE.PlaneGeometry(
       this.params.maxRadius * 2,
       this.params.maxRadius * 2,
@@ -72,7 +73,7 @@ export class ThreeJSSetup {
       segments
     );
     
-    // Transform to create wedge shape with proper orientation
+    // Transform to create shell logo shape - narrow bottom fanning upward
     const positions = this.geometry.attributes.position.array as Float32Array;
     const colors = new Float32Array(positions.length);
     
@@ -80,26 +81,34 @@ export class ThreeJSSetup {
       const x = positions[i];
       const y = positions[i + 1];
       
-      // Convert x,y to radius and angle for wedge shape
-      const radius = Math.sqrt(x * x + y * y);
-      const angle = Math.atan2(y, x);
+      // Convert plane coordinates to shell coordinates
+      // X stays as horizontal position (-maxRadius to +maxRadius)
+      // Y becomes distance from mouth (0 to maxRadius)
+      const horizontalPos = x;
+      const distanceFromMouth = y + this.params.maxRadius; // Shift Y from [-maxRadius, maxRadius] to [0, 2*maxRadius]
       
-      // Hide vertices outside arc span or beyond radius
-      if (Math.abs(angle) > this.params.arcSpan / 2 || radius > this.params.maxRadius || radius < 0.5) {
+      // Calculate angle from centerline based on horizontal position and distance
+      const maxWidthAtDistance = distanceFromMouth * Math.tan(this.params.arcSpan / 2);
+      const angle = Math.atan2(horizontalPos, distanceFromMouth);
+      
+      // Hide vertices outside the shell shape
+      if (Math.abs(angle) > this.params.arcSpan / 2 || 
+          distanceFromMouth < 0.1 || 
+          distanceFromMouth > this.params.maxRadius ||
+          Math.abs(horizontalPos) > maxWidthAtDistance) {
         positions[i] = 0;     // X
         positions[i + 1] = 0; // Y (height)
         positions[i + 2] = -100; // Z (hide by moving far back)
-        colors[i] = 0.0;     // R
-        colors[i + 1] = 0.0; // G
-        colors[i + 2] = 0.0; // B
+        colors[i] = 0.0;
+        colors[i + 1] = 0.0;
+        colors[i + 2] = 0.0;
       } else {
-        // Map to wedge coordinates: angle becomes X, radius becomes Z
-        const normalizedAngle = angle / (this.params.arcSpan / 2); // -1 to 1
-        positions[i] = normalizedAngle * this.params.maxRadius; // X position based on angle
-        positions[i + 1] = 0; // Y height (flat initially)
-        positions[i + 2] = radius; // Z position based on radius
+        // Shell coordinates: X = horizontal position, Z = distance from mouth
+        positions[i] = horizontalPos; // X (horizontal spread)
+        positions[i + 1] = 0; // Y (height - flat initially)
+        positions[i + 2] = distanceFromMouth; // Z (distance from mouth)
         
-        // Set color based on frequency (angle position)
+        // Set color based on frequency (horizontal position)
         const normalizedFreq = (angle + this.params.arcSpan / 2) / this.params.arcSpan;
         colors[i] = 1.0 - normalizedFreq * 0.8;     // R (high at low freq)
         colors[i + 1] = Math.sin(normalizedFreq * Math.PI) * 0.8; // G (peak at mid freq)
@@ -179,8 +188,8 @@ export class ThreeJSSetup {
     this.updateGeometry();
     
     // Keep camera fixed - no rotation
-    this.camera.position.set(0, 8, -12);
-    this.camera.lookAt(0, 0, 5);
+    this.camera.position.set(0, this.params.maxRadius / 2, -this.params.maxRadius / 2);
+    this.camera.lookAt(0, 0, 0);
     
     this.renderer.render(this.scene, this.camera);
     this.animationId = requestAnimationFrame(this.animate);
