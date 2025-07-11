@@ -8,6 +8,20 @@ This is a full-stack web application that visualizes phonetic sounds as interact
 
 Preferred communication style: Simple, everyday language.
 
+## Recent Changes
+
+### January 11, 2025 - Shell Geometry & Coordinate Transformation Complete
+- **Step 1:** Built CoordinateTransform class with mathematical mapping between logical and display coordinates
+- **Step 2:** Integrated coordinate transformation with Three.js geometry creation and wave sampling
+- **Step 3:** Implemented bilateral symmetry, fixed mouth singularity, and added debouncing
+- **Key Features:**
+  - Bilateral symmetry: Each half-wedge represents full spectrum (0-1 frequency range)  
+  - Finite mouth width (0.3 units) prevents singularity at origin
+  - 300ms debouncing prevents UI sensitivity issues
+  - Clean separation: wave physics in logical space, display in shell space
+- **Status:** Geometry and proportions confirmed working correctly
+- **Next:** Refine physics, spectra, wave equations and timing
+
 ## System Architecture
 
 ### Frontend Architecture
@@ -41,9 +55,11 @@ Preferred communication style: Simple, everyday language.
 
 ### Wave System
 - **Phonetic Types**: Four distinct sound categories (vowel, trill, fricative, plosive)
-- **Frequency Mapping**: Each phonetic type has unique frequency characteristics
+- **Coordinate System**: Logical coordinates (frequency 0-1, time 0-1) mapped to shell display coordinates
+- **Bilateral Symmetry**: Each half-wedge represents full spectrum with mirror wave effects
+- **Geometry**: 60-degree wedge with finite mouth width to prevent singularity
 - **Visual Representation**: Waves rendered as 3D geometric patterns with color coding
-- **Real-time Animation**: Dynamic wave propagation and decay effects
+- **Real-time Animation**: Dynamic wave propagation and decay effects with debounced input
 
 ## Data Flow
 
