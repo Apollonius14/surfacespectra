@@ -47,7 +47,7 @@ export default function PhoneticKeyboard({ onKeyPress, activeWaveCount }: Phonet
   };
 
   return (
-    <div className="h-[20vh] bg-secondary border-t border-border">
+    <div className="h-48 bg-secondary border-t border-border">
       <div className="h-full flex flex-col">
         {/* Keyboard Header */}
         <div className="px-6 py-3 bg-secondary border-b border-border">

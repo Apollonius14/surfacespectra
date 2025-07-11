@@ -12,14 +12,21 @@ export default function PhoneticVisualizer() {
   const [activeWaveCount, setActiveWaveCount] = useState(0);
 
   useEffect(() => {
-    if (!canvasRef.current) return;
+    if (!canvasRef.current) {
+      console.error('Canvas ref not available');
+      return;
+    }
 
+    console.log('Initializing Three.js and wave engine...');
+    
     // Initialize wave engine and Three.js setup
     const waveEngine = new WaveEngine();
     const threeSetup = new ThreeJSSetup(canvasRef.current, waveEngine);
     
     waveEngineRef.current = waveEngine;
     threeSetupRef.current = threeSetup;
+    
+    console.log('Three.js setup complete');
 
     // Update wave count periodically
     const updateInterval = setInterval(() => {
@@ -41,8 +48,10 @@ export default function PhoneticVisualizer() {
   }, []);
 
   const handleKeyPress = (phoneticType: PhoneticType) => {
+    console.log('Key pressed:', phoneticType);
     if (waveEngineRef.current) {
       waveEngineRef.current.generateWave(phoneticType);
+      console.log('Wave generated, active waves:', waveEngineRef.current.getActiveWaveCount());
     }
   };
 
@@ -68,18 +77,26 @@ export default function PhoneticVisualizer() {
             <span className="inline-block w-2 h-2 bg-green-500 rounded-full mr-2"></span>
             100 Hz - 6 kHz
           </div>
-          <Button 
-            onClick={handleReset}
-            className="bg-accent hover:bg-accent/90 text-primary"
-          >
-            <RotateCcw className="w-4 h-4 mr-2" />
-            Reset
-          </Button>
+          <div className="flex space-x-2">
+            <Button 
+              onClick={() => handleKeyPress('vowel')}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Test Vowel
+            </Button>
+            <Button 
+              onClick={handleReset}
+              className="bg-accent hover:bg-accent/90 text-primary"
+            >
+              <RotateCcw className="w-4 h-4 mr-2" />
+              Reset
+            </Button>
+          </div>
         </div>
       </header>
 
       {/* Visualization Canvas */}
-      <div className="flex-1 relative" style={{ height: '80vh' }}>
+      <div className="flex-1 relative min-h-0">
         <canvas
           ref={canvasRef}
           className="w-full h-full bg-gradient-to-br from-background via-secondary to-background"
