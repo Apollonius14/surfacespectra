@@ -49,7 +49,7 @@ export class ThreeJSSetup {
     );
     // Position camera like low-flying aircraft - behind and above the mouth
     this.camera.position.set(0, this.params.maxRadius / 2, -this.params.maxRadius / 2);
-    this.camera.lookAt(0, -this.params.maxRadius / 4, this.params.maxRadius / 2); // Look at wedge center
+    this.camera.lookAt(0, -this.params.maxRadius / 2, this.params.maxRadius / 2); // Look at wedge center
     
     // Renderer setup
     this.renderer.setSize(container.clientWidth, container.clientHeight);
@@ -71,7 +71,7 @@ export class ThreeJSSetup {
     // Create plane geometry that will be transformed
     this.geometry = new THREE.PlaneGeometry(
       2, // Normalized size
-      2, // Normalized size
+      4, // Doubled height for twice as long wedge
       segments,
       segments
     );
@@ -86,7 +86,7 @@ export class ThreeJSSetup {
       
       // Convert plane coordinates to logical coordinates
       const frequency = (x + 1) / 2; // 0 to 1
-      const time = (y + 1) / 2;      // 0 to 1
+      const time = (y + 2) / 4;      // 0 to 1 (accounting for doubled height: -2 to 2 -> 0 to 1)
       
       // Transform to display coordinates
       const displayCoords = this.coordinateTransform.logicalToDisplay({ frequency, time });
@@ -116,7 +116,7 @@ export class ThreeJSSetup {
     
     this.mesh = new THREE.Mesh(this.geometry, this.material);
     this.mesh.position.z = this.params.maxRadius / 2; // Move wedge down to canvas center
-    this.mesh.position.y = -this.params.maxRadius / 4; // Move down further for portrait center
+    this.mesh.position.y = -this.params.maxRadius / 2; // Move much closer to bottom of canvas
     this.scene.add(this.mesh);
     
     // Add wireframe grid to show shell structure
@@ -129,7 +129,7 @@ export class ThreeJSSetup {
     });
     const wireframeMesh = new THREE.Mesh(wireframeGeometry, wireframeMaterial);
     wireframeMesh.position.z = this.params.maxRadius / 2; // Match main mesh position
-    wireframeMesh.position.y = -this.params.maxRadius / 4; // Match main mesh position
+    wireframeMesh.position.y = -this.params.maxRadius / 2; // Match main mesh position
     this.scene.add(wireframeMesh);
   }
 
@@ -180,7 +180,7 @@ export class ThreeJSSetup {
     
     // Keep camera fixed - no rotation
     this.camera.position.set(0, this.params.maxRadius / 2, -this.params.maxRadius / 2);
-    this.camera.lookAt(0, -this.params.maxRadius / 4, this.params.maxRadius / 2);
+    this.camera.lookAt(0, -this.params.maxRadius / 2, this.params.maxRadius / 2);
     
     this.renderer.render(this.scene, this.camera);
     this.animationId = requestAnimationFrame(this.animate);
