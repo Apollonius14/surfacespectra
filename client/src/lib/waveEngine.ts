@@ -17,6 +17,13 @@ export interface WaveParams {
   decay: number;
   spread: number;
   centerFreq: number;
+  // New linguistic parameters
+  duration: number;        // How long the wave persists (0-1)
+  frequencyBandwidth: number; // Width of frequency distribution
+  attackTime: number;      // Time to reach peak amplitude
+  sustainLevel: number;    // Sustained amplitude level (0-1)
+  modulationRate: number;  // For trill oscillation (Hz)
+  envelopeType: 'sustained' | 'burst' | 'modulated' | 'broadband';
 }
 
 export class WaveEngine {
@@ -33,10 +40,58 @@ export class WaveEngine {
   };
 
   private readonly phoneticParams: Record<PhoneticType, WaveParams> = {
-    vowel: { freq: 500, amplitude: 1.0, decay: 0.7, spread: 0.3, centerFreq: 600 },
-    trill: { freq: 1500, amplitude: 0.8, decay: 0.6, spread: 0.5, centerFreq: 1200 },
-    fricative: { freq: 4000, amplitude: 0.6, decay: 0.9, spread: 0.2, centerFreq: 4000 },
-    plosive: { freq: 2000, amplitude: 1.2, decay: 0.4, spread: 0.4, centerFreq: 2500 }
+    vowel: {
+      freq: 100,              // Tight around 100Hz
+      amplitude: 0.8,
+      decay: 0.05,            // Gradual trailing off
+      spread: 0.2,            // Narrow frequency band
+      centerFreq: 0.1,        // Low frequency position
+      duration: 0.9,          // Nearly entire duration
+      frequencyBandwidth: 0.1, // Very narrow band
+      attackTime: 0.1,        // Small initial burst
+      sustainLevel: 0.9,      // High sustained level
+      modulationRate: 0,      // No modulation
+      envelopeType: 'sustained'
+    },
+    trill: {
+      freq: 150,
+      amplitude: 0.7,
+      decay: 0.08,
+      spread: 0.4,
+      centerFreq: 0.3,
+      duration: 0.9,          // Entire duration
+      frequencyBandwidth: 0.3,
+      attackTime: 0.05,
+      sustainLevel: 0.8,
+      modulationRate: 8,      // 8Hz modulation for trill effect
+      envelopeType: 'modulated'
+    },
+    fricative: {
+      freq: 3000,
+      amplitude: 0.3,         // Lowest average power
+      decay: 0.04,            // Slow decay for persistence
+      spread: 0.9,            // Broadest frequency range
+      centerFreq: 0.6,
+      duration: 0.95,         // Persists entire time
+      frequencyBandwidth: 0.8, // Widest bandwidth
+      attackTime: 0.2,
+      sustainLevel: 0.6,
+      modulationRate: 0,
+      envelopeType: 'broadband'
+    },
+    plosive: {
+      freq: 1000,
+      amplitude: 1.5,         // High peak power
+      decay: 0.4,             // Rapid decay
+      spread: 0.7,            // Broadband
+      centerFreq: 0.5,
+      duration: 0.2,          // Brief duration
+      frequencyBandwidth: 0.6, // Wide frequency spread
+      attackTime: 0.02,       // Very rapid attack
+      sustainLevel: 0.1,      // Low sustain (mostly silent)
+      modulationRate: 0,
+      envelopeType: 'burst'
+    }
   };
 
   public generateWave(phoneticType: PhoneticType): void {
@@ -51,18 +106,20 @@ export class WaveEngine {
       decay: params.decay,
       type: phoneticType,
       centerAngle,
-      spread: params.spread
+      spread: params.spread * params.frequencyBandwidth // Adjust spread by bandwidth
     });
   }
 
   public updateTime(deltaTime: number): void {
     this.time += deltaTime;
     
-    // Remove old waves
-    this.waves = this.waves.filter(wave => 
-      this.time - wave.birthTime < 25 && 
-      this.getWaveRadius(wave) < this.params.maxRadius
-    );
+    // Remove old waves based on their linguistic duration
+    this.waves = this.waves.filter(wave => {
+      const params = this.phoneticParams[wave.type];
+      const age = this.time - wave.birthTime;
+      const maxAge = params.duration * 25; // Scale duration to animation time
+      return age < maxAge && this.getWaveRadius(wave) < this.params.maxRadius;
+    });
   }
 
   public calculateHeightAtPosition(frequency: number, time: number): number {
@@ -95,12 +152,16 @@ export class WaveEngine {
         // Check if this position is affected by this wave
         if (angleDiff <= wave.spread) {
           const age = this.time - wave.birthTime;
-          const amplitude = wave.amplitude * Math.exp(-age * wave.decay) * 1.5;
+          const params = this.phoneticParams[wave.type];
+          
+          // Calculate envelope based on phonetic type
+          let envelopeAmplitude = this.calculateEnvelope(wave.type, age, params);
+          
           const angularFactor = Math.cos(angleDiff / wave.spread * Math.PI / 2);
           const radialFactor = Math.exp(-distanceFromWave * 0.8);
           const frequencyFactor = Math.sin(wave.frequency / 100 * distanceFromWave * Math.PI);
           
-          totalHeight += amplitude * angularFactor * radialFactor * frequencyFactor;
+          totalHeight += envelopeAmplitude * angularFactor * radialFactor * frequencyFactor;
         }
       }
     });
@@ -130,6 +191,45 @@ export class WaveEngine {
 
   public getWaves(): Wave[] {
     return [...this.waves];
+  }
+
+  private calculateEnvelope(type: PhoneticType, age: number, params: WaveParams): number {
+    const normalizedAge = age / (params.duration * 25); // Normalize to 0-1 over wave duration
+    
+    switch (params.envelopeType) {
+      case 'sustained': // Vowel: small burst, sustained, gradual decay
+        if (normalizedAge < params.attackTime) {
+          return params.amplitude * (normalizedAge / params.attackTime);
+        } else if (normalizedAge < 0.8) {
+          return params.amplitude * params.sustainLevel;
+        } else {
+          // Gradual trailing off
+          const decayFactor = (1 - normalizedAge) / 0.2;
+          return params.amplitude * params.sustainLevel * decayFactor;
+        }
+        
+      case 'modulated': // Trill: steady modulation
+        const baseAmplitude = params.amplitude * Math.exp(-normalizedAge * params.decay);
+        const modulation = 1 + 0.5 * Math.sin(2 * Math.PI * params.modulationRate * age);
+        return baseAmplitude * modulation;
+        
+      case 'burst': // Plosive: rapid peak then decay
+        if (normalizedAge < params.attackTime) {
+          return params.amplitude * (normalizedAge / params.attackTime);
+        } else {
+          // Rapid decay to near silence
+          const decayFactor = Math.exp(-normalizedAge * params.decay * 10);
+          return params.amplitude * params.sustainLevel * decayFactor;
+        }
+        
+      case 'broadband': // Fricative: sustained but lower power
+        const sustainedAmplitude = params.amplitude * params.sustainLevel;
+        const slowDecay = Math.exp(-normalizedAge * params.decay * 0.5);
+        return sustainedAmplitude * slowDecay;
+        
+      default:
+        return params.amplitude * Math.exp(-normalizedAge * params.decay);
+    }
   }
 
   public reset(): void {
