@@ -12,7 +12,7 @@ export interface DisplayCoordinates {
 export class CoordinateTransform {
   private readonly params = {
     arcSpan: Math.PI / 3, // 60 degrees total
-    maxRadius: 10,
+    maxRadius: 20, // Doubled for twice as long
     mouthWidth: 0.3, // Small but finite width at mouth to avoid singularity
   };
 

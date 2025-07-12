@@ -33,8 +33,8 @@ export class WaveEngine {
 
   private readonly params = {
     arcSpan: Math.PI / 3, // 60 degrees
-    maxRadius: 10,
-    waveSpeed: 0.08,
+    maxRadius: 20, // Doubled for twice as long
+    waveSpeed: 0.20, // Increased propagation rate
     minFreq: 100,
     maxFreq: 6000,
   };
@@ -159,9 +159,9 @@ export class WaveEngine {
           
           const angularFactor = Math.cos(angleDiff / wave.spread * Math.PI / 2);
           const radialFactor = Math.exp(-distanceFromWave * 0.8);
-          const frequencyFactor = Math.sin(wave.frequency / 100 * distanceFromWave * Math.PI);
+          const frequencyFactor = Math.abs(Math.sin(wave.frequency / 100 * distanceFromWave * Math.PI));
           
-          totalHeight += envelopeAmplitude * angularFactor * radialFactor * frequencyFactor * 5.0; // Temporary multiplier
+          totalHeight += Math.abs(envelopeAmplitude * angularFactor * radialFactor * frequencyFactor * 5.0); // Ensure positive values
         }
       }
     });

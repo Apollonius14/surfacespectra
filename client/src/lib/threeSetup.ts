@@ -15,7 +15,7 @@ export class ThreeJSSetup {
 
   private readonly params = {
     arcSpan: Math.PI / 3, // 60 degrees
-    maxRadius: 10,
+    maxRadius: 20, // Doubled for twice as long
     segments: 128,
   };
 
@@ -49,7 +49,7 @@ export class ThreeJSSetup {
     );
     // Position camera like low-flying aircraft - behind and above the mouth
     this.camera.position.set(0, this.params.maxRadius / 2, -this.params.maxRadius / 2);
-    this.camera.lookAt(0, 0, this.params.maxRadius / 2); // Look at the tip/mouth of the shell
+    this.camera.lookAt(0, -this.params.maxRadius / 4, this.params.maxRadius / 2); // Look at wedge center
     
     // Renderer setup
     this.renderer.setSize(container.clientWidth, container.clientHeight);
@@ -116,6 +116,7 @@ export class ThreeJSSetup {
     
     this.mesh = new THREE.Mesh(this.geometry, this.material);
     this.mesh.position.z = this.params.maxRadius / 2; // Move wedge down to canvas center
+    this.mesh.position.y = -this.params.maxRadius / 4; // Move down further for portrait center
     this.scene.add(this.mesh);
     
     // Add wireframe grid to show shell structure
@@ -128,6 +129,7 @@ export class ThreeJSSetup {
     });
     const wireframeMesh = new THREE.Mesh(wireframeGeometry, wireframeMaterial);
     wireframeMesh.position.z = this.params.maxRadius / 2; // Match main mesh position
+    wireframeMesh.position.y = -this.params.maxRadius / 4; // Match main mesh position
     this.scene.add(wireframeMesh);
   }
 
@@ -178,7 +180,7 @@ export class ThreeJSSetup {
     
     // Keep camera fixed - no rotation
     this.camera.position.set(0, this.params.maxRadius / 2, -this.params.maxRadius / 2);
-    this.camera.lookAt(0, 0, this.params.maxRadius / 2);
+    this.camera.lookAt(0, -this.params.maxRadius / 4, this.params.maxRadius / 2);
     
     this.renderer.render(this.scene, this.camera);
     this.animationId = requestAnimationFrame(this.animate);
