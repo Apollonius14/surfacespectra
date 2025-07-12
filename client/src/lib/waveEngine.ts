@@ -45,7 +45,7 @@ export class WaveEngine {
       amplitude: 0.8,
       decay: 0.05,            // Gradual trailing off
       spread: 0.2,            // Narrow frequency band
-      centerFreq: 0.1,        // Low frequency position
+      centerFreq: 100,        // Hz value for frequencyToAngle
       duration: 0.9,          // Nearly entire duration
       frequencyBandwidth: 0.1, // Very narrow band
       attackTime: 0.1,        // Small initial burst
@@ -58,7 +58,7 @@ export class WaveEngine {
       amplitude: 0.7,
       decay: 0.08,
       spread: 0.4,
-      centerFreq: 0.3,
+      centerFreq: 500,        // Hz value for frequencyToAngle
       duration: 0.9,          // Entire duration
       frequencyBandwidth: 0.3,
       attackTime: 0.05,
@@ -71,7 +71,7 @@ export class WaveEngine {
       amplitude: 0.3,         // Lowest average power
       decay: 0.04,            // Slow decay for persistence
       spread: 0.9,            // Broadest frequency range
-      centerFreq: 0.6,
+      centerFreq: 4000,       // Hz value for frequencyToAngle
       duration: 0.95,         // Persists entire time
       frequencyBandwidth: 0.8, // Widest bandwidth
       attackTime: 0.2,
@@ -84,7 +84,7 @@ export class WaveEngine {
       amplitude: 1.5,         // High peak power
       decay: 0.4,             // Rapid decay
       spread: 0.7,            // Broadband
-      centerFreq: 0.5,
+      centerFreq: 1500,       // Hz value for frequencyToAngle
       duration: 0.2,          // Brief duration
       frequencyBandwidth: 0.6, // Wide frequency spread
       attackTime: 0.02,       // Very rapid attack
@@ -106,7 +106,7 @@ export class WaveEngine {
       decay: params.decay,
       type: phoneticType,
       centerAngle,
-      spread: params.spread * params.frequencyBandwidth // Adjust spread by bandwidth
+      spread: Math.max(0.1, params.spread * params.frequencyBandwidth) // Ensure minimum spread
     });
   }
 
@@ -161,7 +161,7 @@ export class WaveEngine {
           const radialFactor = Math.exp(-distanceFromWave * 0.8);
           const frequencyFactor = Math.sin(wave.frequency / 100 * distanceFromWave * Math.PI);
           
-          totalHeight += envelopeAmplitude * angularFactor * radialFactor * frequencyFactor;
+          totalHeight += envelopeAmplitude * angularFactor * radialFactor * frequencyFactor * 5.0; // Temporary multiplier
         }
       }
     });
