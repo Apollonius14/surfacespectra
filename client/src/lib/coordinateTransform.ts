@@ -12,7 +12,7 @@ export interface DisplayCoordinates {
 export class CoordinateTransform {
   private readonly params = {
     arcSpan: Math.PI / 3, // 60 degrees total
-    maxRadius: 20, // Doubled for twice as long
+    maxRadius: 60, // Doubled for twice as long
     mouthWidth: 0.3, // Small but finite width at mouth to avoid singularity
   };
 
@@ -38,8 +38,8 @@ export class CoordinateTransform {
       normalizedFreq * (this.params.arcSpan / 2);    // Right: 0 to +30°
     
     // Calculate width that avoids singularity at mouth
-    const currentWidth = this.params.mouthWidth + (radius * Math.tan(this.params.arcSpan / 2));
-    const x = currentWidth * (angle / (this.params.arcSpan / 2));
+    const currentWidth = this.params.mouthWidth + (radius * Math.tan(this.params.arcSpan / 3));
+    const x = currentWidth * (angle / (this.params.arcSpan / 3));
     
     return {
       x,
@@ -83,7 +83,7 @@ export class CoordinateTransform {
    * Generate a grid of display coordinates for testing
    * Creates a shell-shaped pattern of points
    */
-  public generateTestGrid(frequencySteps: number = 21, timeSteps: number = 21): DisplayCoordinates[] {
+  public generateTestGrid(frequencySteps: number = 21, timeSteps: number = 70): DisplayCoordinates[] {
     const points: DisplayCoordinates[] = [];
     
     for (let f = 0; f < frequencySteps; f++) {
