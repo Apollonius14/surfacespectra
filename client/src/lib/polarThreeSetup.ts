@@ -34,8 +34,8 @@ export class PolarThreeSetup {
     
     const dimensions = this.polarField.getFieldDimensions();
     
-    // Position camera above and behind the field center
-    this.camera.position.set(0, dimensions.maxRadius * 0.8, -dimensions.maxRadius * 0.5);
+    // Position camera closer for zoomed in view
+    this.camera.position.set(0, dimensions.maxRadius * 0.4, -dimensions.maxRadius * 0.3);
     this.camera.lookAt(0, 0, dimensions.maxRadius * 0.5); // Look at middle of field
 
     // Renderer setup
@@ -79,13 +79,9 @@ export class PolarThreeSetup {
         const cartesian = this.polarField.polarToCartesian({ radius, angle });
         vertices.push(cartesian.x, cartesian.y, cartesian.z);
         
-        // Color based on position (frequency → angle, time → radius)
-        const hue = (angle + dimensions.halfAngleSpan) / dimensions.totalAngleSpan; // 0 to 1
-        const saturation = 0.7;
-        const lightness = 0.3 + radius * 0.4; // Darker at center, lighter at edges
-        
-        const color = new THREE.Color().setHSL(hue * 0.6, saturation, lightness);
-        colors.push(color.r, color.g, color.b);
+        // Simple neutral color scheme
+        const gray = 0.2;
+        colors.push(gray, gray, gray);
       }
     }
     
@@ -112,7 +108,7 @@ export class PolarThreeSetup {
     
     // Create material
     this.fieldMaterial = new THREE.MeshPhongMaterial({
-      vertexColors: true,
+      color: 0x333333,
       side: THREE.DoubleSide,
       transparent: true,
       opacity: 0.8,
@@ -259,10 +255,7 @@ export class PolarThreeSetup {
   private animate = (): void => {
     this.animationId = requestAnimationFrame(this.animate);
     
-    // Rotate field slightly for dynamic effect
-    if (this.fieldMesh) {
-      this.fieldMesh.rotation.y += 0.001;
-    }
+    // No rotation - keep field stationary
     
     this.renderer.render(this.scene, this.camera);
   };
